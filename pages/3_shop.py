@@ -72,7 +72,7 @@ def build_popup_html(row):
     """
 
 
-def store_card(row, favs):
+def store_card(row, favs, prefix=""):
     """가게 한 곳을 카드로 그린다. 별표 버튼으로 즐겨찾기 토글."""
     name = row["가게명"]
     is_fav = name in favs
@@ -96,7 +96,7 @@ def store_card(row, favs):
             # 로그인한 사용자에게만 즐겨찾기 별표를 보여준다.
             if auth.is_logged_in():
                 label = "⭐" if is_fav else "☆"
-                if st.button(label, key=f"fav_{FAV_KIND}_{name}",
+                if st.button(label, key=f"fav_{FAV_KIND}_{prefix}_{name}",
                              help="즐겨찾기"):
                     added = toggle_favorite(FAV_KIND, name)
                     if added:
@@ -122,7 +122,7 @@ else:
             st.caption("아직 즐겨찾기한 가게가 없어요. 아래 목록에서 별을 눌러 담아 보세요.")
         else:
             for _, row in fav_df.iterrows():
-                store_card(row, favs)
+                store_card(row, favs, prefix="topfav")
 
     # ── 검색 영역 ─────────────────────────────────────────────────
     st.divider()
@@ -174,6 +174,6 @@ else:
             st.write("**가게 목록**")
             st.caption("로그인하면 즐겨찾기에 담을 수 있어요.")
         for _, row in filtered.iterrows():
-            store_card(row, favs)
+            store_card(row, favs, prefix="list")
     else:
         st.info("선택한 조건에 맞는 가게가 없습니다. 지역이나 종류를 바꿔보세요.")

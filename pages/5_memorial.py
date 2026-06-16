@@ -20,8 +20,8 @@ from db import (get_favorites, toggle_favorite,
 
 auth.login_widget()
 
-st.title("마지막 인사")
-st.write("이별을 준비할 수 있도록 장례 시설을 안내하고, 소중한 추억을 앨범으로 간직해 드립니다.")
+st.title("🕯️ 따뜻한 마지막 안녕")
+st.write("내 위치(시/군/구/동)를 선택하면 가까운 반려동물 장례식장을 지도에 표시해 드립니다.")
 
 FAV_KIND = "facility"   # 즐겨찾기 종류 (shop 은 'store')
 
@@ -58,7 +58,7 @@ if comfort_msgs:
     # 세션마다 한 번 고른 메시지를 유지 (새로고침 때마다 안 바뀌도록)
     if "comfort_msg" not in st.session_state:
         st.session_state.comfort_msg = random.choice(comfort_msgs)
-    st.info(st.session_state.comfort_msg)
+    st.info(f"🌈 {st.session_state.comfort_msg}")
 
 
 def build_popup_html(row):
@@ -91,7 +91,7 @@ def build_popup_html(row):
     """
 
 
-def facility_card(row, favs):
+def facility_card(row, favs, prefix=""):
     """장례식장 한 곳을 카드로. 별표로 즐겨찾기 토글."""
     name = row["시설명"]
     is_fav = name in favs
@@ -100,7 +100,7 @@ def facility_card(row, favs):
         with c1:
             badge = "  ✅ 정식 허가" if str(row.get('허가', '')).strip() == "허가" else ""
             st.write(f"**{name}**{badge}")
-            st.caption(f"{row['시군구']} {row['동']}  ·  "
+            st.caption(f"📍 {row['시군구']} {row['동']}  ·  "
                        f"🏷️ {row['특징']}  ·  ☎ {row['전화번호']}")
         with c2:
             map_link = (f"https://map.kakao.com/link/to/"
@@ -115,7 +115,7 @@ def facility_card(row, favs):
         with c3:
             if auth.is_logged_in():
                 label = "⭐" if is_fav else "☆"
-                if st.button(label, key=f"fav_{FAV_KIND}_{name}", help="즐겨찾기"):
+                if st.button(label, key=f"fav_{FAV_KIND}_{prefix}_{name}", help="즐겨찾기"):
                     added = toggle_favorite(FAV_KIND, name)
                     if added:
                         st.toast(f"⭐ '{name}'을(를) 즐겨찾기에 추가했어요.")
@@ -133,17 +133,17 @@ else:
     # ── 상단: 내 즐겨찾기 (로그인 시에만) ─────────────────────────
     if auth.is_logged_in():
         st.divider()
-        st.subheader("내 즐겨찾기")
+        st.subheader("⭐ 내 즐겨찾기")
         fav_df = df[df["시설명"].isin(favs)]
         if fav_df.empty:
-            st.caption("아직 즐겨찾기한 곳이 없어요. 아래 목록에서 별을 눌러 담아 보세요.")
+            st.caption("아직 즐겨찾기한 장례식장이 없어요. 아래 목록에서 ☆ 별을 눌러 추가해 보세요.")
         else:
             for _, row in fav_df.iterrows():
-                facility_card(row, favs)
+                facility_card(row, favs, prefix="topfav")
 
     # ── 검색 영역 ─────────────────────────────────────────────────
     st.divider()
-    st.subheader("장례식장 찾기")
+    st.subheader("🔎 장례식장 찾기")
 
     sido, sigungu, dong = region_selectors(df, key_prefix="memorial")
     filtered = filter_places(df, sido, sigungu, dong)
@@ -159,7 +159,7 @@ else:
     if "봉안당 있음" in type_filter:
         filtered = filtered[filtered["봉안당"].astype(str).str.strip() == "O"]
 
-    st.write(f"**검색 결과 {len(filtered)}곳**")
+    st.write(f"**📍 검색 결과: {len(filtered)}곳**")
 
     if not filtered.empty:
         avg_lat = filtered['위도'].mean()
@@ -182,23 +182,23 @@ else:
             m.fit_bounds(bounds, padding=(30, 30))
 
         st_folium(m, use_container_width=True, height=500, returned_objects=[])
-        st.caption("체크 표시는 정식 허가를 받은 시설이에요.")
+        st.caption("🟣 반려동물 장례식장   ·   ✅ 표시는 정식 허가 시설입니다")
 
         # 목록
         st.divider()
         if auth.is_logged_in():
-            st.write("**장례식장 목록**  ·  별을 눌러 즐겨찾기에 담아요")
+            st.write("📋 **장례식장 목록**  ·  ☆ 별을 눌러 즐겨찾기에 추가하세요")
         else:
-            st.write("**장례식장 목록**")
-            st.caption("로그인하면 즐겨찾기에 담을 수 있어요.")
+            st.write("📋 **장례식장 목록**")
+            st.caption("로그인하면 ⭐ 즐겨찾기에 추가할 수 있어요.")
         for _, row in filtered.iterrows():
-            facility_card(row, favs)
+            facility_card(row, favs, prefix="list")
     else:
         st.info("선택한 조건에 맞는 장례식장이 없습니다. 지역이나 시설 유형을 바꿔보세요.")
 
 # ── 장례 절차 안내 (pet-life-care 의 guide.html 내용을 가져옴) ──────
 st.divider()
-with st.expander("반려동물 장례 절차 안내"):
+with st.expander("📖 반려동물 장례 절차 안내"):
     st.markdown("""
     1. **사망 확인** — 동물병원에서 사망을 확인합니다.
     2. **장례식장 예약** — 위에서 가까운 정식 허가 시설을 찾아 연락합니다.
@@ -229,16 +229,16 @@ if st.button("상담 신청하기"):
 # 추억 앨범 (로그인한 사용자만)
 # ════════════════════════════════════════════════════════════════════
 st.divider()
-st.header("우리 아이 추억 앨범")
+st.header("📷 우리 아이 추억 앨범")
 
 if not auth.is_logged_in():
-    st.info("추억 앨범은 로그인 후 이용할 수 있어요. "
+    st.info("🔒 추억 앨범은 로그인 후 이용할 수 있어요. "
             "왼쪽 사이드바에서 닉네임으로 로그인해 주세요.")
 else:
     st.caption("대표 사진 한 장과 소중한 추억들을 기록해 보세요.")
 
     # ── 대표 사진 ──────────────────────────────────────────────────
-    st.subheader("대표 사진")
+    st.subheader("🖼️ 대표 사진")
     photo_b64 = get_album_photo()
     if photo_b64:
         st.image(base64.b64decode(photo_b64), width=300)
@@ -258,13 +258,13 @@ else:
             if st.button("이 사진으로 저장", type="primary", key="album_save_photo"):
                 b64 = base64.b64encode(uploaded.getvalue()).decode("utf-8")
                 set_album_photo(b64)
-                st.toast("대표 사진을 저장했어요.")
+                st.toast("대표 사진을 저장했어요! 📷")
                 st.rerun()
 
     st.divider()
 
     # ── 추억 기록 추가 ────────────────────────────────────────────
-    st.subheader("추억 기록하기")
+    st.subheader("📝 추억 기록 추가")
     col1, col2 = st.columns([1, 3])
     with col1:
         mem_date = st.date_input("날짜", value=date.today(), key="album_mem_date")
@@ -274,7 +274,7 @@ else:
     if st.button("추억 추가", type="primary", key="album_add_mem"):
         if mem_text.strip():
             add_memory(mem_date, mem_text.strip())
-            st.toast("추억을 기록했어요.")
+            st.toast("추억을 기록했어요 🐾")
             st.rerun()
         else:
             st.warning("추억 메모를 입력해 주세요.")
@@ -282,7 +282,7 @@ else:
     st.divider()
 
     # ── 추억 타임라인 ─────────────────────────────────────────────
-    st.subheader("추억 타임라인")
+    st.subheader("📅 추억 타임라인")
     memories = get_memories()
     if not memories:
         st.caption("아직 기록된 추억이 없어요. 위에서 첫 추억을 남겨보세요.")
