@@ -181,7 +181,7 @@ def build_popup_html(row):
     """
 
 
-def adopt_card(row, favs, prefix=""):
+def adopt_card(row, favs, prefix="", idx=0):
     name = row["name"]
     is_fav = name in favs
     with st.container(border=True):
@@ -199,7 +199,7 @@ def adopt_card(row, favs, prefix=""):
         with c3:
             if auth.is_logged_in():
                 label = "⭐" if is_fav else "☆"
-                if st.button(label, key=f"fav_{FAV_KIND}_{prefix}_{name}", help="즐겨찾기"):
+                if st.button(label, key=f"fav_{FAV_KIND}_{prefix}_{idx}", help="즐겨찾기"):
                     added = toggle_favorite(FAV_KIND, name)
                     if added:
                         st.toast(f"⭐ '{name}'을(를) 즐겨찾기에 추가했어요.")
@@ -218,8 +218,8 @@ else:
         fav_df = filtered[filtered["name"].isin(favs)]
         if not fav_df.empty:
             st.markdown("##### 이 지역의 즐겨찾기")
-            for _, row in fav_df.iterrows():
-                adopt_card(row, favs, prefix="topfav")
+            for i, (_, row) in enumerate(fav_df.iterrows()):
+                adopt_card(row, favs, prefix="topfav", idx=i)
             st.divider()
 
     # 지도 (좌표가 비어있는 행은 안전하게 제외)
@@ -255,5 +255,5 @@ else:
     else:
         st.markdown("##### 입양처 목록")
         st.caption("로그인하면 즐겨찾기에 담을 수 있어요.")
-    for _, row in filtered.iterrows():
-        adopt_card(row, favs, prefix="list")
+    for i, (_, row) in enumerate(filtered.iterrows()):
+        adopt_card(row, favs, prefix="list", idx=i)
